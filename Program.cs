@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -22,7 +23,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 // ?? JWT Ayarlarýný Yükleme
 var jwtSettings = builder.Configuration.GetSection("JWT");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Secret"]);
-
+                 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -32,20 +33,30 @@ builder.Services.AddAuthentication(options =>
 {
     options.RequireHttpsMetadata = false;
     options.SaveToken = true;
+    //options.Authority = "Api:Authority";
+    //options.Audience  = "Api:Audience";
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidateIssuer = true,
-        ValidIssuer = jwtSettings["Issuer"],
+        //ValidIssuer = jwtSettings["Issuer"],
         ValidateAudience = true,
-        ValidAudience = jwtSettings["Audience"],
+        //ValidAudience = jwtSettings["Audience"],
         ValidateLifetime = true
     };
+    options.MapInboundClaims = false;
 });
 
 // ?? Yetkilendirme
-builder.Services.AddAuthorization();
+//builder.Services.AddAuthorization();
+
+var requireAuthPolicy = new AuthorizationPolicyBuilder()
+    .RequireAuthenticatedUser()
+    .Build();
+
+builder.Services.AddAuthorizationBuilder()
+    .SetDefaultPolicy(requireAuthPolicy);
 
 // ?? Servis Baðýmlýlýklarýný Ekleme
 builder.Services.AddScoped<IPasswordService, PasswordService>();

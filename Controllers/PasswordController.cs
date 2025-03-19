@@ -7,11 +7,13 @@ using PasswordKeeperAPI.Services;
 using SeydaSecurity;
 using Microsoft.AspNetCore.Authorization;
 using System.Linq;
+using System.Security.Claims;
 
 namespace PasswordKeeperAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PasswordController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -187,6 +189,14 @@ namespace PasswordKeeperAPI.Controllers
         {
             var password = await _context.Passwords.FindAsync(id);
             if (password == null) return NotFound("Password not found.");
+
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity == null)
+            {
+                return Unauthorized();
+            }
+
+            var claims = identity.Claims.Select(c => new { c.Type, c.Value }).ToList();
 
             var currentUser = User.Identity.Name;
             if (password.Username != currentUser && !User.IsInRole("Admin"))
